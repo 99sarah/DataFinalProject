@@ -5,6 +5,7 @@ from tab1 import tab1
 from tab2 import tab2
 
 
+
 app = Dash(__name__)
 
 app.layout = html.Div([
