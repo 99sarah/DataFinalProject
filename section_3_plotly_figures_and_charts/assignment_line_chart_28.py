@@ -16,7 +16,7 @@ app = Dash(__name__)
 # App layout
 app.layout = html.Div(
     dcc.Graph(
-        figure = px.line(spain_skiers, x='Year', y='Percent_Skiers')
+        figure = px.line(spain_skiers, x='Year', y='Percent_Skiers', labels={'Percent_Skiers': 'Percentage of spaniards that skied'})
     )
 )
 
