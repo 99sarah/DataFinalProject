@@ -1,3 +1,5 @@
+import numpy as np
+
 from data.covidData import kCovidDf, kResponseTrackerDf
 from dash import Dash, html, dcc, callback, Output, Input, dash_table
 import plotly.express as px
@@ -11,7 +13,7 @@ responseTrackerTab = dcc.Tab(
     children=[
         html.Div(children=[
             dcc.Dropdown(kResponseTrackerDf.CountryName.unique(), id='country-selection', value='Germany', multi=True),
-            dcc.Dropdown(kCovidDf.columns, id='covid-trend-selection', value='C1M_School closing'),
+            dcc.Dropdown(kCovidDf.columns, id='covid-trend-selection', value='new_cases_smoothed_per_million'),
             dcc.Graph(id='covid-trend-chart'),
             dcc.Dropdown(kResponseTrackerDf.columns, id='metric-selection', value='C1M_School closing'),
             dcc.Graph(id='response-chart')
@@ -27,14 +29,17 @@ responseTrackerTab = dcc.Tab(
      Input('metric-selection', 'value')]
 )
 def update_graph(country_names, covid_trend_metric, metric_name):
+    print(f'{country_names}, {covid_trend_metric}, {metric_name}')
+    startDate = np.datetime64('2020-03-01')
+    endDate = np.datetime64('2022-09-01')
     covid_trend_chart = px.line(
-        kCovidDf[kCovidDf['iso_code'] == 'DEU'][covid_trend_metric],
-        color='CountryName',
-        x='Date',
-        y=metric_name
+        kCovidDf.query("location in @country_names and @startDate < date < @endDate"),
+        color='location',
+        x='date',
+        y=covid_trend_metric
     )
     response_chart = px.line(
-        kResponseTrackerDf.query("CountryName in @country_names"),
+        kResponseTrackerDf.query("CountryName in @country_names and @startDate < Date < @endDate"),
         color='CountryName',
         x='Date',
         y=metric_name
