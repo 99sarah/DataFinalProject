@@ -38,6 +38,8 @@ def update_graph(start, end):
                          locationmode='ISO-3',
                          animation_frame=cov_df_grouped['date'].dt.date,
                          range_color=(cov_df_grouped[metric].min(),
-                                      quantile)
+                                      quantile),
+                         color_continuous_scale=px.colors.sequential.solar,
+
 
                          )
