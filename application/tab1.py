@@ -2,13 +2,14 @@ from dash import Dash, html, dcc, callback, Output, Input
 import plotly.express as px
 import pandas as pd
 
+from data.covidData import kCovidDf
 
-df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv')
-
-tab1 = dcc.Tab([
-    'Tab 1',
+tab1 = dcc.Tab(
+    label= 'Line chart',
+    children = [
+    'Line Chart',
     html.H1(children='Title of Dash App', style={'textAlign': 'center'}),
-    dcc.Dropdown(df.country.unique(), 'Canada', id='dropdown-selection'),
+    dcc.Dropdown(kCovidDf.iso_code.unique(), value='DEU', id='dropdown-selection'),
     dcc.Graph(id='graph-content')
 ])
 
@@ -18,5 +19,5 @@ tab1 = dcc.Tab([
     Input('dropdown-selection', 'value')
 )
 def update_graph(value):
-    dff = df[df.country == value]
-    return px.line(dff, x='year', y='pop')
+    dff = kCovidDf[kCovidDf.iso_code == value]
+    return px.scatter(dff, x='people_vaccinated', y='icu_patients')
