@@ -2,7 +2,6 @@ from dash import Dash, html, dcc, callback, Output, Input
 import plotly.express as px
 import pandas as pd
 import numpy as np
-import dash_bootstrap_components as dbc
 
 from data.covidData import kCovidDf
 

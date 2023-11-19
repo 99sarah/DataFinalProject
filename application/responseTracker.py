@@ -15,7 +15,7 @@ responseTrackerTab = dcc.Tab(
             dcc.Dropdown(
                 kResponseTrackerDf.CountryName.unique(),
                 id='country-selection',
-                value='Germany',
+                value=['Germany'],
                 multi=True,
                 className='dbc'
             ),
@@ -32,7 +32,8 @@ responseTrackerTab = dcc.Tab(
                 value='C1M_School closing',
                 className='dbc'
             ),
-            dcc.Graph(id='response-chart')
+            dcc.Graph(id='response-chart'),
+            html.Div(id='my-output-d')
         ])
     ])
 
@@ -53,12 +54,36 @@ def update_graph(country_names, covid_trend_metric, metric_name):
         color='location',
         x='date',
         y=covid_trend_metric
-    )
+    ).update_xaxes(
+                showspikes=True,
+                spikecolor="white",
+                spikesnap="cursor",
+                spikemode="across",
+                spikedash="solid",
+            )#.update_traces(xaxis="x4")
     response_chart = px.line(
         kResponseTrackerDf.query("CountryName in @country_names and @startDate < Date < @endDate"),
         color='CountryName',
         x='Date',
         y=metric_name
-    )
+    ).update_xaxes(
+                showspikes=True,
+                spikecolor="white",
+                spikesnap="cursor",
+                spikemode="across",
+                spikedash="solid",
+            )#.update_traces(xaxis="x4")
 
     return covid_trend_chart, response_chart
+
+
+@callback(
+    Output('my-output-d', 'children'),
+    Input('covid-trend-chart', 'hoverData'),
+)
+def cross_filtering(hover_data):
+    if not hover_data:
+        raise PreventUpdate
+    date = hover_data['points'][0]['x']
+    return f'Output: {date}'
+#TODO Spikeline across both graphs
