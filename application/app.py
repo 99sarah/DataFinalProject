@@ -3,7 +3,7 @@ import plotly.express as px
 import pandas as pd
 
 from application.responseTracker import responseTrackerTab
-from tab1 import tab1
+from worldwide import tab1
 from tab2 import tab2
 from correlation import correlationTab
 
