@@ -12,10 +12,26 @@ responseTrackerTab = dcc.Tab(
     label='Response Tracker',
     children=[
         html.Div(children=[
-            dcc.Dropdown(kResponseTrackerDf.CountryName.unique(), id='country-selection', value='Germany', multi=True),
-            dcc.Dropdown(kCovidDf.columns, id='covid-trend-selection', value='new_cases_smoothed_per_million'),
+            dcc.Dropdown(
+                kResponseTrackerDf.CountryName.unique(),
+                id='country-selection',
+                value='Germany',
+                multi=True,
+                className='dbc'
+            ),
+            dcc.Dropdown(
+                kCovidDf.columns,
+                id='covid-trend-selection',
+                value='new_cases_smoothed_per_million',
+                className='dbc'
+            ),
             dcc.Graph(id='covid-trend-chart'),
-            dcc.Dropdown(kResponseTrackerDf.columns, id='metric-selection', value='C1M_School closing'),
+            dcc.Dropdown(
+                kResponseTrackerDf.columns,
+                id='metric-selection',
+                value='C1M_School closing',
+                className='dbc'
+            ),
             dcc.Graph(id='response-chart')
         ])
     ])
@@ -25,7 +41,7 @@ responseTrackerTab = dcc.Tab(
     [Output('covid-trend-chart', 'figure'),
      Output('response-chart', 'figure')],
     [Input('country-selection', 'value'),
-    Input('covid-trend-selection', 'value'),
+     Input('covid-trend-selection', 'value'),
      Input('metric-selection', 'value')]
 )
 def update_graph(country_names, covid_trend_metric, metric_name):

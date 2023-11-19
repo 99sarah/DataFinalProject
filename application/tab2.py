@@ -5,12 +5,15 @@ import pandas as pd
 from data.covidData import kCovidDf
 
 tab2 = dcc.Tab(
-    label= 'Line chart',
+    label='Line chart',
     children=[
-    'Tab 2',
-    dcc.Dropdown(kCovidDf.continent.dropna().unique(), id='dropdown', value='Europe'),
-    dcc.Graph(id='graph'),
-])
+        dcc.Dropdown(
+            kCovidDf.continent.dropna().unique(),
+            id='dropdown',
+            value='Europe',
+            className='dbc'),
+        dcc.Graph(id='graph'),
+    ])
 
 
 @callback(
