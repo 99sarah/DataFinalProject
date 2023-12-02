@@ -1,6 +1,6 @@
 import numpy as np
 
-from data.covidData import kCovidDf, kResponseTrackerDf
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
 from dash import Dash, html, dcc, callback, Output, Input, dash_table
 import plotly.express as px
 import pandas as pd
@@ -27,7 +27,8 @@ responseTrackerTab = dcc.Tab(
             ),
             dcc.Graph(id='covid-trend-chart'),
             dcc.Dropdown(
-                kResponseTrackerDf.columns,
+                kResponseOrdinalMeaning[['Name', 'Description']].rename(
+                    columns={'Name': 'value', 'Description': 'label'}).to_dict('records'),
                 id='metric-selection',
                 value='C1M_School closing',
                 className='dbc'
@@ -55,24 +56,24 @@ def update_graph(country_names, covid_trend_metric, metric_name):
         x='date',
         y=covid_trend_metric
     ).update_xaxes(
-                showspikes=True,
-                spikecolor="white",
-                spikesnap="cursor",
-                spikemode="across",
-                spikedash="solid",
-            )#.update_traces(xaxis="x4")
+        showspikes=True,
+        spikecolor="white",
+        spikesnap="cursor",
+        spikemode="across",
+        spikedash="solid",
+    )  # .update_traces(xaxis="x4")
     response_chart = px.line(
         kResponseTrackerDf.query("CountryName in @country_names and @startDate < Date < @endDate"),
         color='CountryName',
         x='Date',
         y=metric_name
     ).update_xaxes(
-                showspikes=True,
-                spikecolor="white",
-                spikesnap="cursor",
-                spikemode="across",
-                spikedash="solid",
-            )#.update_traces(xaxis="x4")
+        showspikes=True,
+        spikecolor="white",
+        spikesnap="cursor",
+        spikemode="across",
+        spikedash="solid",
+    )  # .update_traces(xaxis="x4")
 
     return covid_trend_chart, response_chart
 
@@ -86,4 +87,4 @@ def cross_filtering(hover_data):
         raise PreventUpdate
     date = hover_data['points'][0]['x']
     return f'Output: {date}'
-#TODO Spikeline across both graphs
+# TODO Spikeline across both graphs
