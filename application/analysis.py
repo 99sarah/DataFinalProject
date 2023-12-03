@@ -181,6 +181,7 @@ def update_graphs(continent, start_date, end_date):
 
 @callback(
     Output('location_selection', 'value'),
+    Output('corona_map_graph', 'clickData'),
     Input('corona_map_graph', 'clickData'),
     Input('location_selection', 'value'))
 def display_click_data(click_data, options):
@@ -192,8 +193,8 @@ def display_click_data(click_data, options):
         selected_points = np.union1d(
             selected_points, options
         )
-        return selected_points
-    return ['Germany']
+        return [selected_points, None]
+    return [options, None]
 
 # @callback(
 #     Output('top_filter','children'),
