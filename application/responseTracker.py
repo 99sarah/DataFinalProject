@@ -41,6 +41,7 @@ responseTrackerTab = dcc.Tab(
         ])
     ])
 
+
 @callback(
     Output('my-output-d', 'children'),
     Input('sub-plots', 'hoverData'),
@@ -52,22 +53,20 @@ def cross_filtering(hover_data):
     return f'Output: {date}'
 
 
-# TODO Spikeline across both graphs
-
 @callback(
-    Output('sub-plots', 'figure'),
+    Output('corona_trend_graph', 'figure'),
 
-    [Input('country-selection', 'value'),
+    [Input('location_selection', 'value'),
      Input('covid-trend-selection', 'value'),
-     Input('metric-selection', 'value')]
+     Input('metric-selection', 'value'),
+     Input('date_range_picker', 'start_date'),
+     Input('date_range_picker', 'end_date')]
 )
-def update_graph(country_names, covid_trend_metric, response_metric_name):
-    startDate = np.datetime64('2020-03-01')
-    endDate = np.datetime64('2022-09-01')
+def update_graph(country_names, covid_trend_metric, response_metric_name, start_date, end_date):
     nested_plot = make_subplots(rows=2, cols=1, shared_xaxes=True)
 
-    covid_pre_filter = kCovidDf.query("location in @country_names and @startDate < date < @endDate")
-    response_pre_filter = kResponseTrackerDf.query("CountryName in @country_names and @startDate < Date < @endDate")
+    covid_pre_filter = kCovidDf.query("location in @country_names and @start_date < date < @end_date")
+    response_pre_filter = kResponseTrackerDf.query("CountryName in @country_names and @start_date < Date < @end_date")
     i = 0
     for country in country_names:
         covid_country = (covid_pre_filter.query('location == @country')),
@@ -82,7 +81,7 @@ def update_graph(country_names, covid_trend_metric, response_metric_name):
         nested_plot.add_trace(covid_graph, row=1, col=1)
 
         response_country = response_pre_filter.query('CountryName == @country')
-        response_graph =go.Scatter(
+        response_graph = go.Scatter(
             x=response_country['Date'],
             y=response_country[response_metric_name],
             legendgroup=country,
