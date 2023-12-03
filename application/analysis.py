@@ -7,11 +7,10 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
-from data.covidData import kCovidDf
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
 
 cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
 cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
-
 
 # date_converter = pd.DataFrame()
 # date_converter['value'] = kCovidDf['date']
@@ -55,12 +54,25 @@ left_filter = dbc.Card(id='left_filter',
                                )]),
                            dbc.Col(children=[
                                dcc.Dropdown(
-                                   kCovidDf.location.unique(),
+                                   kResponseTrackerDf.CountryName.unique(),
                                    id='location_selection',
                                    value=['Germany'],
                                    multi=True,
                                    className='dbc'
                                )]),
+                           dbc.Col(children=[dcc.Dropdown(
+                               kCovidDf.columns,
+                               id='covid-trend-selection',
+                               value='new_cases_smoothed_per_million',
+                               className='dbc'
+                           )]),
+                           dbc.Col(children=[dcc.Dropdown(
+                               kResponseOrdinalMeaning[['Name', 'Description']].rename(
+                                   columns={'Name': 'value', 'Description': 'label'}).to_dict('records'),
+                               id='metric-selection',
+                               value='C1M_School closing',
+                               className='dbc'
+                           )]),
                        ])
 corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
@@ -133,11 +145,11 @@ analysisTab = dcc.Tab(
 def update_graphs(continent, start_date, end_date):
     if not continent or not start_date or not end_date:
         raise PreventUpdate
-    #filter data between given dates
+    # filter data between given dates
     cov_df_in_range = cov_df_grouped[cov_df_grouped['date'].between(start_date, end_date)]
     cov_df = cov_df_in_range[['iso_code', 'location', 'new_cases']]
     cov_df = cov_df.groupby(['iso_code', 'location']).sum().reset_index()
-    #show map
+    # show map
     format = '%m/%d/%Y'
     fig = px.choropleth(cov_df,
                         locations='iso_code',

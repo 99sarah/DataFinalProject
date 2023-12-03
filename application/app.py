@@ -26,7 +26,6 @@ app.layout = html.Div([
             analysisTab,
             tab2,
             correlationTab,
-            responseTrackerTab
         ], className='dbc'),
 ])
 

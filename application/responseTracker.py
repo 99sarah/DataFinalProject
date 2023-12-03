@@ -18,7 +18,7 @@ responseTrackerTab = dcc.Tab(
         html.Div(children=[
             dcc.Dropdown(
                 kResponseTrackerDf.CountryName.unique(),
-                id='country-selection',
+                id='location_selection',
                 value=['Germany'],
                 multi=True,
                 className='dbc'
@@ -42,15 +42,15 @@ responseTrackerTab = dcc.Tab(
     ])
 
 
-@callback(
-    Output('my-output-d', 'children'),
-    Input('sub-plots', 'hoverData'),
-)
-def cross_filtering(hover_data):
-    if not hover_data:
-        raise PreventUpdate
-    date = hover_data['points'][0]['x']
-    return f'Output: {date}'
+# @callback(
+#     Output('my-output-d', 'children'),
+#     Input('corona_trend_graph', 'hoverData'),
+# )
+# def cross_filtering(hover_data):
+#     if not hover_data:
+#         raise PreventUpdate
+#     date = hover_data['points'][0]['x']
+#     return f'Output: {date}'
 
 
 @callback(
@@ -92,6 +92,7 @@ def update_graph(country_names, covid_trend_metric, response_metric_name, start_
         response_graph.update(dy=1)
         nested_plot.add_trace(response_graph, row=2, col=1)
         i += 1
+    # configure hover information
     nested_plot.update_xaxes(showspikes=True, spikemode="across")
     nested_plot.update_traces(xaxis="x2")
     nested_plot.update_layout(hovermode="x")
