@@ -12,7 +12,6 @@ from data.covidData import kCovidDf
 cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
 cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
 
-
 # date_converter = pd.DataFrame()
 # date_converter['value'] = kCovidDf['date']
 # date_converter['key'] = date_converter['value'].astype(np.int64)
@@ -133,11 +132,11 @@ analysisTab = dcc.Tab(
 def update_graphs(continent, start_date, end_date):
     if not continent or not start_date or not end_date:
         raise PreventUpdate
-    #filter data between given dates
+    # filter data between given dates
     cov_df_in_range = cov_df_grouped[cov_df_grouped['date'].between(start_date, end_date)]
     cov_df = cov_df_in_range[['iso_code', 'location', 'new_cases']]
     cov_df = cov_df.groupby(['iso_code', 'location']).sum().reset_index()
-    #show map
+    # show map
     format = '%m/%d/%Y'
     fig = px.choropleth(cov_df,
                         locations='iso_code',
@@ -169,6 +168,7 @@ def update_graphs(continent, start_date, end_date):
 
 @callback(
     Output('location_selection', 'value'),
+    Output('corona_map_graph', 'clickData'),
     Input('corona_map_graph', 'clickData'),
     Input('location_selection', 'value'))
 def display_click_data(click_data, options):
@@ -180,8 +180,8 @@ def display_click_data(click_data, options):
         selected_points = np.union1d(
             selected_points, options
         )
-        return selected_points
-    return ['Germany']
+        return [selected_points, None]
+    return [options, None]
 
 # @callback(
 #     Output('top_filter','children'),
