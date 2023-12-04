@@ -12,45 +12,36 @@ from plotly.subplots import make_subplots
 
 k_line_color_palett = ['rgb(50,76,113)', 'rgb(183,30,29)', 'rgb(0,189,139)', 'rgb(236,157,14)', 'rgb(110,175,245)']
 
-responseTrackerTab = dcc.Tab(
-    label='Response Tracker',
-    children=[
-        html.Div(children=[
-            dcc.Dropdown(
-                kResponseTrackerDf.CountryName.unique(),
-                id='location_selection',
-                value=['Germany'],
-                multi=True,
-                className='dbc'
-            ),
-            dcc.Dropdown(
-                kCovidDf.columns,
-                id='covid-trend-selection',
-                value='new_cases_smoothed_per_million',
-                className='dbc'
-            ),
-            dcc.Dropdown(
-                kResponseOrdinalMeaning[['Name', 'Description']].rename(
-                    columns={'Name': 'value', 'Description': 'label'}).to_dict('records'),
-                id='metric-selection',
-                value='C1M_School closing',
-                className='dbc'
-            ),
-            html.Div(id='my-output-d'),
-            dcc.Graph(id="sub-plots")
-        ])
-    ])
+@callback(
+    Output('response_legend', 'children'),
 
-
-# @callback(
-#     Output('my-output-d', 'children'),
-#     Input('corona_trend_graph', 'hoverData'),
-# )
-# def cross_filtering(hover_data):
-#     if not hover_data:
-#         raise PreventUpdate
-#     date = hover_data['points'][0]['x']
-#     return f'Output: {date}'
+    [Input('corona_trend_graph', 'hoverData'),
+     Input('metric-selection', 'value'), ]
+)
+def legend_ordinal_response(hover_data, response_metric):
+    if not hover_data:
+        hover_data = dict({'points': []})
+    response_metric_description = kResponseOrdinalMeaning.query('Name == @response_metric')['Description'][0]
+    ordinal_values = list(map(lambda point: point['y'], hover_data['points']))
+    ordinal_coding = kResponseOrdinalMeaning.query('Name == @response_metric')['Coding'].to_dict()[0].split('+')
+    ordered_list = []
+    i = 0
+    for ordinal_code in ordinal_coding:
+        if i in ordinal_values:
+            ordered_list.append(html.Li(html.Span(ordinal_code, style={'color': 'white'}), style={'color': 'red'}))
+        else:
+            ordered_list.append(html.Li(ordinal_code))
+        i += 1
+    return html.Div(
+        children=[
+            html.H6(
+                f'Ordinal decoding:'
+            ),
+            html.Ul(
+                ordered_list
+            )
+        ]
+    )
 
 
 @callback(
@@ -63,7 +54,9 @@ responseTrackerTab = dcc.Tab(
      Input('date_range_picker', 'end_date')]
 )
 def update_graph(country_names, covid_trend_metric, response_metric_name, start_date, end_date):
-    nested_plot = make_subplots(rows=2, cols=1, shared_xaxes=True)
+    response_metric_description = kResponseOrdinalMeaning.query('Name == @response_metric_name')['Description'][0]
+    nested_plot = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.9, 0.3], vertical_spacing=0.1,
+                                subplot_titles=(covid_trend_metric, response_metric_description))
 
     covid_pre_filter = kCovidDf.query("location in @country_names and @start_date < date < @end_date")
     response_pre_filter = kResponseTrackerDf.query("CountryName in @country_names and @start_date < Date < @end_date")
@@ -95,5 +88,6 @@ def update_graph(country_names, covid_trend_metric, response_metric_name, start_
     # configure hover information
     nested_plot.update_xaxes(showspikes=True, spikemode="across")
     nested_plot.update_traces(xaxis="x2")
-    nested_plot.update_layout(hovermode="x")
+    nested_plot.update_layout(hovermode="x", height=600, title='Trend view')
+    nested_plot.update_xaxes(title_text="Time", row=2, col=1)
     return nested_plot

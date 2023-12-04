@@ -8,6 +8,7 @@ import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
 from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
+import application.responseTracker
 
 cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
 cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
@@ -17,6 +18,77 @@ cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID',
 # date_converter['key'] = date_converter['value'].astype(np.int64)
 # date_converter.set_index('date_as_int')
 
+SIDEBAR_STYLE = {
+    "margin-bottom": "2rem",
+}
+
+STYLE = {
+    "margin-top": "2rem",
+    "margin-left": "1rem",
+    "margin-right": "1rem"
+}
+
+left_filter = html.Div(id='left_filter',
+                       style=STYLE,
+                       children=[
+                           html.H6('Choose a continent:'),
+                           dcc.Dropdown(
+                               options=[
+                                   {'label': 'World', 'value': 'world'},
+                                   {'label': 'Europe', 'value': 'europe'},
+                                   {'label': 'North America', 'value': 'north america'},
+                                   {'label': 'South America', 'value': 'south america'},
+                                   {'label': 'Asia', 'value': 'asia'},
+                                   {'label': 'Africa', 'value': 'africa'},
+                               ],
+                               id='continent_dropdown',
+                               value='world',
+                               className='dbc',
+                               style=SIDEBAR_STYLE
+                           ),
+
+                           dbc.Col(children=[
+                               html.H6('Choose a time period:'),
+                               dcc.DatePickerRange(
+                                   id='date_range_picker',
+                                   start_date=kCovidDf['date'].min(),
+                                   end_date=kCovidDf['date'].max(),
+                                   className='dbc',
+                                   style=SIDEBAR_STYLE
+                               )]),
+                           dbc.Col(
+                               children=[
+                                   html.H6('Pick countries:'),
+                                   dcc.Dropdown(
+                                       kResponseTrackerDf.CountryName.unique(),
+                                       id='location_selection',
+                                       value=['Germany'],
+                                       multi=True,
+                                       className='dbc',
+                                       style=SIDEBAR_STYLE
+                                   )]),
+                           dbc.Col(
+                               children=[
+                                   html.H6('Choose a covid metric:'),
+                                   dcc.Dropdown(
+                                       kCovidDf.columns,
+                                       id='covid-trend-selection',
+                                       value='new_cases_smoothed_per_million',
+                                       className='dbc',
+                                       style=SIDEBAR_STYLE
+                                   )]),
+                           dbc.Col(
+                               children=[
+                                   html.H6('Choose a national response metric:'),
+                                   dcc.Dropdown(
+                                       kResponseOrdinalMeaning[['Name', 'Description']].rename(
+                                           columns={'Name': 'value', 'Description': 'label'}).to_dict('records'),
+                                       id='metric-selection',
+                                       value='C1M_School closing',
+                                       className='dbc',
+                                       style=SIDEBAR_STYLE
+                                   )]),
+                       ])
 top_filter = dbc.Card(id='top_filter',
                       # children=[
                       #     dcc.Slider(
@@ -29,64 +101,16 @@ top_filter = dbc.Card(id='top_filter',
                       #     )
                       # ]
                       )
-left_filter = dbc.Card(id='left_filter',
-                       children=[
-                           dcc.Dropdown(
-                               options=[
-                                   {'label': 'World', 'value': 'world'},
-                                   {'label': 'Europe', 'value': 'europe'},
-                                   {'label': 'North America', 'value': 'north america'},
-                                   {'label': 'South America', 'value': 'south america'},
-                                   {'label': 'Asia', 'value': 'asia'},
-                                   {'label': 'Africa', 'value': 'africa'},
-                               ],
-                               id='continent_dropdown',
-                               value='world',
-                               className='dbc'
-                           ),
-
-                           dbc.Col(children=[
-                               dcc.DatePickerRange(
-                                   id='date_range_picker',
-                                   start_date=kCovidDf['date'].min(),
-                                   end_date=kCovidDf['date'].max(),
-                                   className='dbc'
-                               )]),
-                           dbc.Col(children=[
-                               dcc.Dropdown(
-                                   kResponseTrackerDf.CountryName.unique(),
-                                   id='location_selection',
-                                   value=['Germany'],
-                                   multi=True,
-                                   className='dbc'
-                               )]),
-                           dbc.Col(children=[dcc.Dropdown(
-                               kCovidDf.columns,
-                               id='covid-trend-selection',
-                               value='new_cases_smoothed_per_million',
-                               className='dbc'
-                           )]),
-                           dbc.Col(children=[dcc.Dropdown(
-                               kResponseOrdinalMeaning[['Name', 'Description']].rename(
-                                   columns={'Name': 'value', 'Description': 'label'}).to_dict('records'),
-                               id='metric-selection',
-                               value='C1M_School closing',
-                               className='dbc'
-                           )]),
-                       ])
 corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
                       )
 corona_bubble = dbc.Card(id='corona_bubble',
                          children=[dcc.Loading(dcc.Graph(id='corona_bubble_graph'))]
                          )
+response_legend = html.Div(id='response_legend', )
 corona_trend = dbc.Card(id='corona_trend',
-                        children=[dcc.Loading(dcc.Graph(id='corona_trend_graph'))]
+                        children=[dcc.Loading(dcc.Graph(id='corona_trend_graph')), response_legend]
                         )
-response_trend = dbc.Card(id='response_trend',
-                          children=[dcc.Loading(dcc.Graph(id='corona_response_graph'))]
-
-                          )
 
 analysisTab = dcc.Tab(
     label='Analysis',
@@ -111,26 +135,18 @@ analysisTab = dcc.Tab(
                         dbc.Row(
                             children=[
                                 dbc.Col(
-                                    children=[corona_map],
+                                    children=[corona_map, corona_bubble],
+                                    width=6
                                 ),
                                 dbc.Col(
                                     children=[corona_trend],
+                                    width=6
                                 )
                             ],
                         ),
-                        dbc.Row(
-                            children=[
-                                dbc.Col(
-                                    children=[corona_bubble],
-                                ),
-                                dbc.Col(
-                                    children=[response_trend],
-                                )
-                            ]
-                        )
                     ],
-                    width=10
-                )]
+                ),
+            ]
         )
     ]
 )
