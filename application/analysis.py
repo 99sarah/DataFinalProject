@@ -7,7 +7,8 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
-from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, kCovid_Response, date_format
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, kCovid_Response, date_format, \
+    kCovidDf_without_owid
 import application.responseTracker
 
 SIDEBAR_STYLE = {
@@ -55,7 +56,7 @@ left_filter = dbc.Card(html.Div(id='left_filter',
                                             dcc.Dropdown(
                                                 kResponseTrackerDf.CountryName.unique(),
                                                 id='location_selection',
-                                                value=['Germany'],
+                                                value=['Germany', 'Norway', 'Sweden'],
                                                 multi=True,
                                                 className='dbc',
                                                 style=SIDEBAR_STYLE
@@ -66,9 +67,7 @@ top_filter = dbc.Card(id='top_filter')
 corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
                       )
-corona_bubble = dbc.Card(id='corona_bubble',
-                         children=[dcc.Graph(id='corona_bubble_graph')]
-                         )
+
 response_legend = html.Div(id='response_legend', )
 response_dropdown = dbc.Row(
     children=[dbc.Col(
@@ -107,9 +106,23 @@ corona_trend = dbc.Card(id='corona_trend',
                             response_legend
                         ]
                         )
+radio_button = dbc.Row(children=[
+    dbc.RadioItems(
+        id='radio_item',
+        options=['absolut', 'relative (per million)'],
+        value='absolut',
+    )
+])
+corona_bubble = dbc.Card(id='corona_bubble',
+                         children=[dcc.Graph(id='corona_bubble_graph'),
+                                   radio_button
+                                   ]
+                         )
 stringency_bar = dbc.Card(
     id='stringency_bar',
-    children=[dcc.Graph(id='stringency_bar_chart')]
+    children=[dcc.Graph(id='stringency_bar_chart'),
+              html.Div(f'The stringency index is a composite measure based on nine response indicators '
+                       f'rescaled to a value from 0 to 100 (100 = strictest).', style=STYLE)]
 )
 
 analysisTab = dcc.Tab(
@@ -181,19 +194,20 @@ analysisTab = dcc.Tab(
 def update_graphs(continent, start_date, end_date):
     if not continent or not start_date or not end_date:
         raise PreventUpdate
+    map_metric = 'new_cases'
     # filter data between given dates
-    cov_df_in_range = kCovidDf[kCovidDf['date'].between(start_date, end_date)]
-    cov_df = cov_df_in_range[['iso_code', 'location', 'new_cases']]
+    cov_df_in_range = kCovidDf_without_owid[kCovidDf_without_owid['date'].between(start_date, end_date)]
+    cov_df = cov_df_in_range[['iso_code', 'location', map_metric]]
     cov_df = cov_df.groupby(['iso_code', 'location']).sum().reset_index()
     # show map
     fig = px.choropleth(cov_df,
                         locations='iso_code',
-                        color='new_cases',
+                        color=map_metric,
                         locationmode='ISO-3',
                         scope=continent,
                         hover_name='location',
-                        range_color=(cov_df['new_cases'].min(),
-                                     cov_df['new_cases'].max()),
+                        range_color=(cov_df[map_metric].min(),
+                                     cov_df[map_metric].max()),
                         color_continuous_scale=px.colors.sequential.solar,
                         title=f'New Cases between {pd.to_datetime(start_date).strftime(date_format)} and {pd.to_datetime(end_date).strftime(date_format)}'
                         )
@@ -221,11 +235,11 @@ def display_click_data(click_data, options):
     return [options, None]
 
 
-def create_bubble_chart(dff, metric, max_x, max_y, title):
+def create_bubble_chart(dff, x_metric, y_metric, max_x, max_y, title):
     fig = px.scatter(
         dff,
-        x='new_cases_smoothed',
-        y='new_deaths_smoothed',
+        x=x_metric,
+        y=y_metric,
         color='location',
         size_max=20,
         range_x=[0, max_x],
@@ -240,51 +254,49 @@ def create_bubble_chart(dff, metric, max_x, max_y, title):
 
 
 @callback(
-    Output('corona_bubble_graph', 'figure'),
+    [Output('corona_bubble_graph', 'figure'),
+     Output('stringency_bar_chart', 'figure')],
     [Input('location_selection', 'value'),
      Input('date_range_picker', 'start_date'),
      Input('date_range_picker', 'end_date'),
      Input('metric-selection', 'value'),
      Input('corona_trend_graph', 'hoverData'),
+     Input('radio_item', 'value')
      ]
 )
-def update_bubble_chart(countries, start_date, end_date, metric, date_hover):
+def update_bubble_bar_chart(countries, start_date, end_date, metric, date_hover, metric_type):
     if not countries:
         raise PreventUpdate
     if date_hover:
         date = date_hover['points'][0]['x']
     else:
         date = start_date
-    filtered_df = kCovid_Response[(kCovid_Response['location'].isin(countries))]
-    max_x = filtered_df.where(filtered_df['date'].between(start_date, end_date))['new_cases_smoothed'].max()
-    max_y = filtered_df.where(filtered_df['date'].between(start_date, end_date))['new_deaths_smoothed'].max()
-    filtered_df = filtered_df[(filtered_df['date'] == date)]
-    title = f'Comparison of new cases and new deaths on {pd.to_datetime(date).strftime(date_format)}'
-    return create_bubble_chart(filtered_df, metric, max_x, max_y, title)
 
-
-@callback(
-    Output('stringency_bar_chart', 'figure'),
-    [Input('location_selection', 'value'),
-     Input('date_range_picker', 'start_date'),
-
-     Input('corona_trend_graph', 'hoverData'), ]
-)
-def update_bar_chart(countries, start_date, hover_data):
-    if not countries:
-        raise PreventUpdate
-    if not hover_data:
-        date = start_date
+    if metric_type == 'absolut':
+        x_column = 'new_cases_smoothed'
+        y_column = 'new_deaths_smoothed'
     else:
-        date = hover_data['points'][0]['x']
+        x_column = 'new_cases_smoothed_per_million'
+        y_column = 'new_deaths_smoothed_per_million'
+
     filtered_df = kCovid_Response[(kCovid_Response['location'].isin(countries))]
+    max_x = filtered_df.where(filtered_df['date'].between(start_date, end_date))[x_column].max()
+    max_y = filtered_df.where(filtered_df['date'].between(start_date, end_date))[y_column].max()
     filtered_df = filtered_df[(filtered_df['date'] == date)]
+    bubble_title = f'Comparison of new cases and new deaths on {pd.to_datetime(date).strftime(date_format)}'
+    bar_title = f'Stringency index on {pd.to_datetime(date).strftime(date_format)}'
+
+    return [create_bubble_chart(filtered_df, x_column, y_column, max_x, max_y, bubble_title),
+            create_bar_chart(filtered_df, bar_title)]
+
+
+def create_bar_chart(dff, title):
     fig = px.bar(
-        filtered_df,
+        dff,
         x='location',
         y='stringency_index',
         range_y=[0, 100],
-        title=f'Stringency index on {pd.to_datetime(date).strftime(date_format)}',
+        title=title,
         color='location'
     )
     return fig
