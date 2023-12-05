@@ -7,28 +7,8 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
-from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, kCovid_Response, date_format
 import application.responseTracker
-
-cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
-cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
-values_per_country = kCovidDf[
-    ['iso_code', 'location', 'stringency_index', 'people_vaccinated', 'aged_65_older', 'population']].groupby(
-    ['iso_code', 'location']).mean().dropna().reset_index()
-merge_1_df = pd.DataFrame()
-merge_1_df[['iso_code', 'location', 'date', 'stringency_index']] = kResponseTrackerDf[['CountryCode', 'CountryName', 'Date', 'StringencyIndex_Average']]
-merge_1_df.set_index(['iso_code', 'location', 'date'], inplace=True)
-merge_2_df = pd.DataFrame()
-merge_2_df[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']] = kCovidDf[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']]
-merge_2_df.set_index(['iso_code', 'location', 'date'], inplace=True)
-merged_df = pd.concat([merge_1_df, merge_2_df], axis=1, join='inner')
-merged_df.reset_index(inplace=True)
-
-
-# date_converter = pd.DataFrame()
-# date_converter['value'] = kCovidDf['date']
-# date_converter['key'] = date_converter['value'].astype(np.int64)
-# date_converter.set_index('date_as_int')
 
 SIDEBAR_STYLE = {
     "margin-bottom": "2rem",
@@ -101,18 +81,7 @@ left_filter = html.Div(id='left_filter',
                                        style=SIDEBAR_STYLE
                                    )]),
                        ])
-top_filter = dbc.Card(id='top_filter',
-                      # children=[
-                      #     dcc.Slider(
-                      #         id='date_slider',
-                      #         min=date_converter['key'].min(),
-                      #         max=date_converter['key'].max(),
-                      #         value=date_converter['key'].min(),
-                      #         # marks=date_converter.to_dict('records'),
-                      #         step=None
-                      #     )
-                      # ]
-                      )
+top_filter = dbc.Card(id='top_filter')
 corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
                       )
@@ -174,46 +143,32 @@ def update_graphs(continent, start_date, end_date):
     if not continent or not start_date or not end_date:
         raise PreventUpdate
     # filter data between given dates
-    cov_df_in_range = cov_df_grouped[cov_df_grouped['date'].between(start_date, end_date)]
+    cov_df_in_range = kCovidDf[kCovidDf['date'].between(start_date, end_date)]
     cov_df = cov_df_in_range[['iso_code', 'location', 'new_cases']]
     cov_df = cov_df.groupby(['iso_code', 'location']).sum().reset_index()
     # show map
-    format = '%m/%d/%Y'
     fig = px.choropleth(cov_df,
                         locations='iso_code',
                         color='new_cases',
                         locationmode='ISO-3',
                         scope=continent,
                         hover_name='location',
-                        # animation_frame=cov_df['date'].dt.date,
                         range_color=(cov_df['new_cases'].min(),
                                      cov_df['new_cases'].max()),
                         color_continuous_scale=px.colors.sequential.solar,
-                        title=f'New Cases between {pd.to_datetime(start_date).strftime(format)} and {pd.to_datetime(end_date).strftime(format)}'
+                        title=f'New Cases between {pd.to_datetime(start_date).strftime(date_format)} and {pd.to_datetime(end_date).strftime(date_format)}'
                         )
     return [fig]
 
-
-# @callback(
-#     Output('location_selection', 'value'),
-#     Input('corona_map_graph', 'selectedData'))
-# def display_selected_data(selected_data):
-#     selected_points_all = cov_df_grouped['location']
-#     if selected_data and selected_data["points"]:
-#         selected_points = np.intersect1d(
-#             selected_points_all, [p["hovertext"] for p in selected_data["points"]]
-#         )
-#         print(selected_points.dtype)
-#         return selected_points
-#     return ['Germany']
 
 @callback(
     Output('location_selection', 'value'),
     Output('corona_map_graph', 'clickData'),
     Input('corona_map_graph', 'clickData'),
     Input('location_selection', 'value'))
+# clicked country from map is added to selected options in dropdown
 def display_click_data(click_data, options):
-    selected_points_all = cov_df_grouped['location']
+    selected_points_all = kCovidDf['location']
     if click_data:
         selected_points = np.intersect1d(
             selected_points_all, [p["hovertext"] for p in click_data["points"]]
@@ -225,25 +180,17 @@ def display_click_data(click_data, options):
     return [options, None]
 
 
-# @callback(
-#     Output('corona_bubble_graph', 'figure'),
-#     [Input('location_selection', 'value'),
-#      Input('date_range_picker', 'start_date'),
-#      Input('date_range_picker', 'end_date'),
-#      Input('metric-selection', 'value'),
-#      Input('corona_trend_graph', 'hoverData')]
-# )
-def create_bubble_chart(dff, metric, max_x, max_y):
+def create_bubble_chart(dff, metric, max_x, max_y, title):
     fig = px.scatter(
         dff,
         x='new_cases_smoothed',
         y='new_deaths_smoothed',
         color='location',
         size='stringency_index',
-        size_max=60,
+        size_max=50,
         range_x=[0, max_x],
-        range_y=[0, max_y]
-
+        range_y=[0, max_y],
+        title=title,
     )
     fig.update_yaxes(rangemode="tozero")
     fig.update_xaxes(rangemode="tozero")
@@ -265,9 +212,9 @@ def update_bubble_chart(countries, start_date, end_date, metric, date_hover):
         date = date_hover['points'][0]['x']
     else:
         date = start_date
-
-    filtered_df = merged_df[(merged_df['location'].isin(countries))]
+    filtered_df = kCovid_Response[(kCovid_Response['location'].isin(countries))]
     max_x = filtered_df.where(filtered_df['date'].between(start_date, end_date))['new_cases_smoothed'].max()
     max_y = filtered_df.where(filtered_df['date'].between(start_date, end_date))['new_deaths_smoothed'].max()
     filtered_df = filtered_df[(filtered_df['date'] == date)]
-    return create_bubble_chart(filtered_df, metric, max_x, max_y)
+    title = f'Comparison of new cases and new deaths showing the stringency index on {pd.to_datetime(date).strftime(date_format)}'
+    return create_bubble_chart(filtered_df, metric, max_x, max_y, title)
