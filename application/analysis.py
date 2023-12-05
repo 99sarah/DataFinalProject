@@ -233,7 +233,7 @@ def display_click_data(click_data, options):
 #      Input('metric-selection', 'value'),
 #      Input('corona_trend_graph', 'hoverData')]
 # )
-def create_bubble_chart(dff, metric):
+def create_bubble_chart(dff, metric, max_x, max_y):
     fig = px.scatter(
         dff,
         x='new_cases_smoothed',
@@ -241,9 +241,8 @@ def create_bubble_chart(dff, metric):
         color='location',
         size='stringency_index',
         size_max=60,
-        # animation_frame='date',
-        range_x=[0, dff['new_cases_smoothed'].max()],
-        range_y=[0, dff['new_deaths_smoothed'].max()]
+        range_x=[0, max_x],
+        range_y=[0, max_y]
 
     )
     fig.update_yaxes(rangemode="tozero")
@@ -259,30 +258,16 @@ def create_bubble_chart(dff, metric):
      Input('metric-selection', 'value'),
      Input('corona_trend_graph', 'hoverData')]
 )
-def update_bubble_chart(countries, start_date, end_date, metric, dateHover):
+def update_bubble_chart(countries, start_date, end_date, metric, date_hover):
     if not countries:
         raise PreventUpdate
-    if dateHover:
-        date = dateHover['points'][0]['x']
+    if date_hover:
+        date = date_hover['points'][0]['x']
     else:
         date = start_date
 
-    filtered_df = merged_df[(merged_df['date'] == date) &(merged_df['location'].isin(countries))]
-    return create_bubble_chart(filtered_df, metric)
-
-# @callback(
-#     Output('top_filter','children'),
-#     [Input('date_range_picker', 'start_date'),
-#      Input('date_range_picker', 'end_date'),]
-# )
-# def update_slider(start_date, end_date):
-#     if not start_date or not end_date:
-#         raise PreventUpdate
-#     return [dcc.Slider(
-#                           id='date_slider',
-#                           min=0,
-#                           max=500,
-#                           value=0,
-#                           #marks={date_converter['date_as_int']: date_converter['date'] for date_as_int, year in date_converter['date'].to_dict()},
-#                           #step=1
-#                       )]
+    filtered_df = merged_df[(merged_df['location'].isin(countries))]
+    max_x = filtered_df.where(filtered_df['date'].between(start_date, end_date))['new_cases_smoothed'].max()
+    max_y = filtered_df.where(filtered_df['date'].between(start_date, end_date))['new_deaths_smoothed'].max()
+    filtered_df = filtered_df[(filtered_df['date'] == date)]
+    return create_bubble_chart(filtered_df, metric, max_x, max_y)
