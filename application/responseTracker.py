@@ -35,7 +35,7 @@ def legend_ordinal_response(hover_data, response_metric):
     return html.Div(
         children=[
             html.H6(
-                f'Ordinal decoding:'
+                f'Index decoding of "{response_metric_description}":'
             ),
             html.Ul(
                 ordered_list
@@ -89,5 +89,9 @@ def update_graph(country_names, covid_trend_metric, response_metric_name, start_
     nested_plot.update_xaxes(showspikes=True, spikemode="across")
     nested_plot.update_traces(xaxis="x2")
     nested_plot.update_layout(hovermode="x", height=600, title='Trend view')
+
+    nested_plot.update_yaxes(title_text="Quantity", row=1, col=1)
+
     nested_plot.update_xaxes(title_text="Time", row=2, col=1)
+    nested_plot.update_yaxes(title_text="Index", row=2, col=1)
     return nested_plot
