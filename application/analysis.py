@@ -11,6 +11,18 @@ from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
 
 cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
 cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
+values_per_country = kCovidDf[
+    ['iso_code', 'location', 'stringency_index', 'people_vaccinated', 'aged_65_older', 'population']].groupby(
+    ['iso_code', 'location']).mean().dropna().reset_index()
+merge_1_df = pd.DataFrame()
+merge_1_df[['iso_code', 'location', 'date', 'stringency_index']] = kResponseTrackerDf[['CountryCode', 'CountryName', 'Date', 'StringencyIndex_Average']]
+merge_1_df.set_index(['iso_code', 'location', 'date'], inplace=True)
+merge_2_df = pd.DataFrame()
+merge_2_df[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']] = kCovidDf[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']]
+merge_2_df.set_index(['iso_code', 'location', 'date'], inplace=True)
+merged_df = pd.concat([merge_1_df, merge_2_df], axis=1, join='inner')
+merged_df.reset_index(inplace=True)
+
 
 # date_converter = pd.DataFrame()
 # date_converter['value'] = kCovidDf['date']
@@ -78,7 +90,7 @@ corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
                       )
 corona_bubble = dbc.Card(id='corona_bubble',
-                         children=[dcc.Loading(dcc.Graph(id='corona_bubble_graph'))]
+                         children=[dcc.Graph(id='corona_bubble_graph')]
                          )
 corona_trend = dbc.Card(id='corona_trend',
                         children=[dcc.Loading(dcc.Graph(id='corona_trend_graph'))]
@@ -195,6 +207,52 @@ def display_click_data(click_data, options):
         )
         return [selected_points, None]
     return [options, None]
+
+
+# @callback(
+#     Output('corona_bubble_graph', 'figure'),
+#     [Input('location_selection', 'value'),
+#      Input('date_range_picker', 'start_date'),
+#      Input('date_range_picker', 'end_date'),
+#      Input('metric-selection', 'value'),
+#      Input('corona_trend_graph', 'hoverData')]
+# )
+def create_bubble_chart(dff, metric):
+    fig = px.scatter(
+        dff,
+        x='new_cases_smoothed',
+        y='new_deaths_smoothed',
+        color='location',
+        size='stringency_index',
+        size_max=60,
+        # animation_frame='date',
+        range_x=[0, dff['new_cases_smoothed'].max()],
+        range_y=[0, dff['new_deaths_smoothed'].max()]
+
+    )
+    fig.update_yaxes(rangemode="tozero")
+    fig.update_xaxes(rangemode="tozero")
+    return fig
+
+
+@callback(
+    Output('corona_bubble_graph', 'figure'),
+    [Input('location_selection', 'value'),
+     Input('date_range_picker', 'start_date'),
+     Input('date_range_picker', 'end_date'),
+     Input('metric-selection', 'value'),
+     Input('corona_trend_graph', 'hoverData')]
+)
+def update_bubble_chart(countries, start_date, end_date, metric, dateHover):
+    if not countries:
+        raise PreventUpdate
+    if dateHover:
+        date = dateHover['points'][0]['x']
+    else:
+        date = start_date
+
+    filtered_df = merged_df[(merged_df['date'] == date) &(merged_df['location'].isin(countries))]
+    return create_bubble_chart(filtered_df, metric)
 
 # @callback(
 #     Output('top_filter','children'),
