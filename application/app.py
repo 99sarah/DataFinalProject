@@ -4,7 +4,7 @@ import pandas as pd
 
 
 from worldwide import worldwideTab
-from tab2 import tab2
+from regression import regression_tab
 from correlation import correlationTab
 from analysis import analysisTab
 
@@ -16,14 +16,13 @@ external_stylesheets = [dbc.themes.DARKLY, dbc_css]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 load_figure_template("DARKLY")
 
-
 app.layout = html.Div([
     dcc.Tabs(
         value='worldwideTab',
         children=[
             worldwideTab,
             analysisTab,
-            tab2,
+            regression_tab,
             correlationTab,
         ], className='dbc'),
 ])
