@@ -35,7 +35,7 @@ def legend_ordinal_response(hover_data, response_metric):
     return html.Div(
         children=[
             html.H6(
-                f'Ordinal decoding:'
+                f'{response_metric_description} meaning:'
             ),
             html.Ul(
                 ordered_list
