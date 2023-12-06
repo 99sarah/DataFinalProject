@@ -110,14 +110,16 @@ regression_tab = dcc.Tab(
                     width=3
                 ),
                 dbc.Col(
-                    children=[regression_chart],
+                    children=[regression_chart, html.H6(id='rmlse_score_display'),],
                     width=9
                 )]
         ),
         dbc.Row(
             children=[
                 dbc.Col(
-                    children=[lasso_pie],
+                    children=[
+                        lasso_pie
+                    ],
                     # width=3
                 ), ]
         ),
@@ -128,13 +130,10 @@ def rss(y, y_hat):
     return ((y - y_hat) ** 2).sum()
     pass
 
-
 def score(y_pred, y_true):
     error = np.square(np.log10(y_pred + 1) - np.log10(y_true + 1)).mean() ** 0.5
     score = 1 - error
     return score
-    # actual_cost = list(data_val['COST'])
-    # actual_cost = np.asarray(actual_cost)
 
 
 def print_nonzero_weights(model, feature_list):
@@ -147,7 +146,8 @@ def print_nonzero_weights(model, feature_list):
 
 @callback(
     [Output('regression_line_chart', 'figure'),
-     Output('pie_chart', 'figure')],
+     Output('pie_chart', 'figure'),
+     Output('rmlse_score_display', 'children')],
     [Input('regression_location_selection', 'value'),
      Input('regression_covid_selection', 'value'),
      Input('regression_response_selection', 'value')]
@@ -199,10 +199,12 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
     model = linear_model.Lasso(alpha=best_lambda, max_iter=100000)
     model.fit(train_data[all_features], train_data[regression_metric])
     prediction_val = model.predict(test_data[all_features])
+    np.clip(prediction_val, 0, None, out=prediction_val)
     non_zero_df = print_nonzero_weights(model, all_features)
 
     print(f"Intercept: {model.intercept_}")
     cur_rss = rss(test_data[regression_metric], prediction_val)
+    rmlse_score = (score(test_data[regression_metric], prediction_val) * 100).round(2)
     print(cur_rss)
 
     test_data['prediction'] = prediction_val
@@ -217,7 +219,7 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
 
     pie_fig = update_pie_chart(non_zero_df)
 
-    return [reg_fig, pie_fig]
+    return [reg_fig, pie_fig, f'Accuracy calculated with RMLSE: {rmlse_score}%']
 
 
 def update_pie_chart(non_zero_df):
