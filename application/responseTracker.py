@@ -1,6 +1,4 @@
 import numpy as np
-import plotly.graph_objects
-
 from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
 from dash import Dash, html, dcc, callback, Output, Input, dash_table
 import plotly.express as px

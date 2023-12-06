@@ -3,8 +3,7 @@ import plotly.express as px
 import pandas as pd
 
 from worldwide import worldwideTab
-from tab2 import tab2
-from correlation import correlationTab
+from regression import regression_tab
 from analysis import analysisTab
 
 import dash_bootstrap_components as dbc
@@ -15,15 +14,13 @@ external_stylesheets = [dbc.themes.DARKLY, dbc_css]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 load_figure_template("DARKLY")
 
-
 app.layout = html.Div([
     dcc.Tabs(
         value='worldwideTab',
         children=[
             worldwideTab,
             analysisTab,
-            tab2,
-            correlationTab,
+            regression_tab,
         ], className='dbc'),
 ])
 

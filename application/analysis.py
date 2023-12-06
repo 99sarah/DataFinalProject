@@ -34,8 +34,8 @@ left_filter = dbc.Card(html.Div(id='left_filter',
                                         html.H6('Choose a time period:'),
                                         dcc.DatePickerRange(
                                             id='date_range_picker',
-                                            start_date=kCovidDf['date'].min(),
-                                            end_date=kCovidDf['date'].max(),
+                                            start_date='2020-03-01',
+                                            end_date='2022-12-31',
                                             className='dbc',
                                             style=SIDEBAR_STYLE
                                         )]),
@@ -70,8 +70,8 @@ response_dropdown = dbc.Row(
                 className='dbc',
             ),
         ],
-        style=STYLE
-
+        style=STYLE,
+        width=5
     ),
 
         dbc.Col(
@@ -85,8 +85,8 @@ response_dropdown = dbc.Row(
                     className='dbc',
                 ),
             ],
-            style=STYLE
-
+            style=STYLE,
+            width=6
         ), ]
 )
 corona_trend = dbc.Card(id='corona_trend',
