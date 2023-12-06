@@ -8,7 +8,7 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
-from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, label_map
 import application.responseTracker
 
 from sklearn import linear_model
@@ -35,7 +35,8 @@ STYLE = {
 
 all_covid_metrics = ['new_cases_smoothed', 'icu_patients', 'reproduction_rate', 'hosp_patients', 'new_tests_smoothed',
                      'positive_rate', 'people_vaccinated']
-all_response_metrics = ['StringencyIndex_Average', 'C1M_School closing', 'C2M_Workplace closing', 'C3M_Cancel public events',
+all_response_metrics = ['StringencyIndex_Average', 'C1M_School closing', 'C2M_Workplace closing',
+                        'C3M_Cancel public events',
                         'C4M_Restrictions on gatherings', 'C5M_Close public transport', 'C6M_Stay at home requirements',
                         'C7M_Restrictions on internal movement', 'C8EV_International travel controls',
                         'E1_Income support', 'H1_Public information campaigns', 'H2_Testing policy',
@@ -60,7 +61,8 @@ left_filter = html.Div(id='regression_left_filter',
                                    html.H5('Pick metrics you want to predict with', style={"margin-bottom": "1rem"}),
                                    html.H6('Covid trend metrics:'),
                                    dcc.Dropdown(
-                                       all_covid_metrics,
+                                       # all_covid_metrics,
+                                       options=label_map(all_covid_metrics),
                                        id='regression_covid_selection',
                                        value=[all_covid_metrics[0]],
                                        className='dbc',
@@ -69,7 +71,8 @@ left_filter = html.Div(id='regression_left_filter',
                                    ),
                                    html.H6('policy response metrics:'),
                                    dcc.Dropdown(
-                                       all_response_metrics,
+                                       # all_response_metrics,
+                                       options=label_map(all_response_metrics),
                                        id='regression_response_selection',
                                        value=[all_response_metrics[0]],
                                        className='dbc',
@@ -84,6 +87,14 @@ regression_chart = dbc.Card(
     children=[
         dcc.Graph(
             id='regression_line_chart'
+        )
+    ]
+)
+lasso_pie = dbc.Card(
+    id="lasso_pie",
+    children=[
+        dcc.Graph(
+            id='pie_chart'
         )
     ]
 )
@@ -103,6 +114,13 @@ regression_tab = dcc.Tab(
                     width=9
                 )]
         ),
+        dbc.Row(
+            children=[
+                dbc.Col(
+                    children=[lasso_pie],
+                    # width=3
+                ), ]
+        ),
     ])
 
 
@@ -111,15 +129,25 @@ def rss(y, y_hat):
     pass
 
 
+def score(y_pred, y_true):
+    error = np.square(np.log10(y_pred + 1) - np.log10(y_true + 1)).mean() ** 0.5
+    score = 1 - error
+    return score
+    # actual_cost = list(data_val['COST'])
+    # actual_cost = np.asarray(actual_cost)
+
+
 def print_nonzero_weights(model, feature_list):
     dataframe = pd.DataFrame()
     dataframe["features"] = feature_list
     dataframe["weight"] = model.coef_
     print(dataframe[dataframe["weight"] != 0])
+    return dataframe[dataframe["weight"] != 0]
 
 
 @callback(
-    Output('regression_line_chart', 'figure'),
+    [Output('regression_line_chart', 'figure'),
+     Output('pie_chart', 'figure')],
     [Input('regression_location_selection', 'value'),
      Input('regression_covid_selection', 'value'),
      Input('regression_response_selection', 'value')]
@@ -134,11 +162,13 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
     regression_metric = 'new_deaths_smoothed'
 
     merge_covid_df = pd.DataFrame()
-    merge_covid_df[['date', regression_metric] + covid_metrics] = kCovidDf.query('location == @country')[['date', regression_metric] + covid_metrics]
+    merge_covid_df[['date', regression_metric] + covid_metrics] = kCovidDf.query('location == @country')[
+        ['date', regression_metric] + covid_metrics]
     merge_covid_df.set_index('date', inplace=True)
 
     merge_response_df = pd.DataFrame()
-    merge_response_df[['date'] + response_metrics] = kResponseTrackerDf.query('CountryName == @country')[['Date'] + response_metrics]
+    merge_response_df[['date'] + response_metrics] = kResponseTrackerDf.query('CountryName == @country')[
+        ['Date'] + response_metrics]
     merge_response_df.set_index('date', inplace=True)
 
     all_regression_columns = pd.concat([merge_covid_df, merge_response_df], axis=1, join='inner')
@@ -169,18 +199,33 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
     model = linear_model.Lasso(alpha=best_lambda, max_iter=100000)
     model.fit(train_data[all_features], train_data[regression_metric])
     prediction_val = model.predict(test_data[all_features])
-    print_nonzero_weights(model, all_features)
+    non_zero_df = print_nonzero_weights(model, all_features)
 
     print(f"Intercept: {model.intercept_}")
+    cur_rss = rss(test_data[regression_metric], prediction_val)
+    print(cur_rss)
 
     test_data['prediction'] = prediction_val
 
     test_data.sort_index(inplace=True)
     train_data.sort_index(inplace=True)
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=train_data.index, y=train_data[regression_metric], text='train'))
-    fig.add_trace(go.Scatter(x=test_data.index, y=test_data['prediction'], text='prediction'))
-    fig.add_trace(go.Scatter(x=test_data.index, y=test_data[regression_metric], text='response'))
+    reg_fig = go.Figure()
+    reg_fig.add_trace(go.Scatter(x=train_data.index, y=train_data[regression_metric], text='train', mode='markers'))
+    reg_fig.add_trace(go.Scatter(x=test_data.index, y=test_data['prediction'], text='prediction'))
+    reg_fig.add_trace(go.Scatter(x=test_data.index, y=test_data[regression_metric], text='response', mode='markers'))
 
+    pie_fig = update_pie_chart(non_zero_df)
+
+    return [reg_fig, pie_fig]
+
+
+def update_pie_chart(non_zero_df):
+    new_df = non_zero_df
+    new_df['weight'] = new_df['weight'].apply(abs)
+    fig = px.pie(
+        new_df,
+        values='weight',
+        names='features'
+    )
     return fig

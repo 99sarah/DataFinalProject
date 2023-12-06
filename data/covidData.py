@@ -39,5 +39,9 @@ def get_label(column):
 def label_map(cols):
     result = []
     for col in cols:
-        result.append({'label': get_label(col), 'value': col})
+        response_desc = kResponseOrdinalMeaning[kResponseOrdinalMeaning['Name'] == col]
+        if response_desc.empty:
+            result.append({'label': get_label(col), 'value': col})
+        else:
+            result.append({'label': response_desc['Description'], 'value': col})
     return result
