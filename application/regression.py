@@ -8,7 +8,7 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
-from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, label_map
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, label_map, get_label
 import application.responseTracker
 
 from sklearn import linear_model
@@ -110,7 +110,7 @@ regression_tab = dcc.Tab(
                     width=3
                 ),
                 dbc.Col(
-                    children=[regression_chart, html.H6(id='rmlse_score_display'),],
+                    children=[regression_chart, html.H6(id='rmlse_score_display'), ],
                     width=9
                 )]
         ),
@@ -129,6 +129,7 @@ regression_tab = dcc.Tab(
 def rss(y, y_hat):
     return ((y - y_hat) ** 2).sum()
     pass
+
 
 def score(y_pred, y_true):
     # source: https://medium.com/analytics-vidhya/root-mean-square-log-error-rmse-vs-rmlse-935c6cc1802a
@@ -217,9 +218,14 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
     train_data.sort_index(inplace=True)
 
     reg_fig = go.Figure()
-    reg_fig.add_trace(go.Scatter(x=train_data.index, y=train_data[regression_metric], text='train', mode='markers'))
-    reg_fig.add_trace(go.Scatter(x=test_data.index, y=test_data['prediction'], text='prediction'))
-    reg_fig.add_trace(go.Scatter(x=test_data.index, y=test_data[regression_metric], text='response', mode='markers'))
+    reg_fig.add_trace(
+        go.Scatter(x=train_data.index, y=train_data[regression_metric], mode='markers', name='Training data set'))
+    reg_fig.add_trace(go.Scatter(x=test_data.index, y=test_data[regression_metric], text='response', mode='markers',
+                                 name='Test data set'))
+    reg_fig.add_trace(go.Scatter(x=test_data.index, y=test_data['prediction'], text='prediction', name='Prediction'))
+    reg_fig.update_layout(xaxis_title='Time',
+                          yaxis_title=get_label(regression_metric)
+                          )
 
     pie_fig = update_pie_chart(non_zero_df)
 
