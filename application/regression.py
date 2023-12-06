@@ -33,12 +33,21 @@ STYLE = {
     "margin-right": "1rem"
 }
 
+all_covid_metrics = ['new_cases_smoothed', 'icu_patients', 'reproduction_rate', 'hosp_patients', 'new_tests_smoothed',
+                     'positive_rate', 'people_vaccinated']
+all_response_metrics = ['StringencyIndex_Average', 'C1M_School closing', 'C2M_Workplace closing', 'C3M_Cancel public events',
+                        'C4M_Restrictions on gatherings', 'C5M_Close public transport', 'C6M_Stay at home requirements',
+                        'C7M_Restrictions on internal movement', 'C8EV_International travel controls',
+                        'E1_Income support', 'H1_Public information campaigns', 'H2_Testing policy',
+                        'H3_Contact tracing', 'H4_Emergency investment in healthcare', 'H7_Vaccination policy',
+                        'H8M_Protection of elderly people']
+
 left_filter = html.Div(id='regression_left_filter',
                        style=STYLE,
                        children=[
                            dbc.Col(
                                children=[
-                                   html.H6('Pick countries:'),
+                                   html.H6('Choose countries:'),
                                    dcc.Dropdown(
                                        kResponseTrackerDf.CountryName.unique(),
                                        id='regression_location_selection',
@@ -46,6 +55,28 @@ left_filter = html.Div(id='regression_left_filter',
                                        className='dbc',
                                        style=SIDEBAR_STYLE
                                    )]),
+                           dbc.Col(
+                               children=[
+                                   html.H5('Pick metrics you want to predict with', style={"margin-bottom": "1rem"}),
+                                   html.H6('Covid trend metrics:'),
+                                   dcc.Dropdown(
+                                       all_covid_metrics,
+                                       id='regression_covid_selection',
+                                       value=[all_covid_metrics[0]],
+                                       className='dbc',
+                                       style={"margin-bottom": "0.5rem", },
+                                       multi=True
+                                   ),
+                                   html.H6('policy response metrics:'),
+                                   dcc.Dropdown(
+                                       all_response_metrics,
+                                       id='regression_response_selection',
+                                       value=[all_response_metrics[0]],
+                                       className='dbc',
+                                       style=SIDEBAR_STYLE,
+                                       multi=True
+                                   ),
+                               ]),
                        ])
 
 regression_chart = dbc.Card(
@@ -65,11 +96,11 @@ regression_tab = dcc.Tab(
             children=[
                 dbc.Col(
                     children=[left_filter],
-                    width=2
+                    width=3
                 ),
                 dbc.Col(
                     children=[regression_chart],
-                    width=10
+                    width=9
                 )]
         ),
     ])
@@ -89,20 +120,37 @@ def print_nonzero_weights(model, feature_list):
 
 @callback(
     Output('regression_line_chart', 'figure'),
-    Input('regression_location_selection', 'value')
+    [Input('regression_location_selection', 'value'),
+     Input('regression_covid_selection', 'value'),
+     Input('regression_response_selection', 'value')]
 )
-def perform_lasso_regression(country):
+def perform_lasso_regression(country, covid_metrics, response_metrics):
+    if not country:
+        raise PreventUpdate
+    if not covid_metrics:
+        covid_metrics = []
+    if not response_metrics:
+        response_metrics = []
     regression_metric = 'new_deaths_smoothed'
-    all_features = ['new_cases_smoothed', 'icu_patients', 'reproduction_rate', 'people_vaccinated']
-    country_df = kCovidDf.query('location == @country')[all_features + [regression_metric, 'date']]
-    print(country_df.isna().sum())
-    country_df.fillna(0, inplace=True)
-    country_df.set_index(['date'], inplace=True)
 
-    train_data = country_df.sample(frac=0.6, random_state=12)
-    valid_and_test = country_df.drop(train_data.index)
+    merge_covid_df = pd.DataFrame()
+    merge_covid_df[['date', regression_metric] + covid_metrics] = kCovidDf.query('location == @country')[['date', regression_metric] + covid_metrics]
+    merge_covid_df.set_index('date', inplace=True)
+
+    merge_response_df = pd.DataFrame()
+    merge_response_df[['date'] + response_metrics] = kResponseTrackerDf.query('CountryName == @country')[['Date'] + response_metrics]
+    merge_response_df.set_index('date', inplace=True)
+
+    all_regression_columns = pd.concat([merge_covid_df, merge_response_df], axis=1, join='inner')
+    all_regression_columns.fillna(0, inplace=True)
+
+    all_features = covid_metrics
+    all_features += response_metrics
+
+    train_data = all_regression_columns.sample(frac=0.6, random_state=12)
+    valid_and_test = all_regression_columns.drop(train_data.index)
     valid_data = valid_and_test.sample(frac=0.5, random_state=62)
-    test_data = country_df.drop(valid_data.index)
+    test_data = all_regression_columns.drop(valid_data.index)
 
     penalties = np.logspace(-4, 3, num=30)
     best_lambda = None
@@ -118,20 +166,21 @@ def perform_lasso_regression(country):
             best_lambda = l
         pass
 
-    model = linear_model.Lasso(alpha=best_lambda, max_iter=1000000)
+    model = linear_model.Lasso(alpha=best_lambda, max_iter=100000)
     model.fit(train_data[all_features], train_data[regression_metric])
-    #print_nonzero_weights(model, all_features)
+    prediction_val = model.predict(test_data[all_features])
+    print_nonzero_weights(model, all_features)
 
     print(f"Intercept: {model.intercept_}")
 
-    valid_data['prediction'] = prediction_val
+    test_data['prediction'] = prediction_val
 
-    valid_data.sort_index(inplace=True)
+    test_data.sort_index(inplace=True)
     train_data.sort_index(inplace=True)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=train_data.index, y=train_data[regression_metric], text='train'))
-    fig.add_trace(go.Scatter(x=valid_data.index, y=valid_data['prediction'], text='prediction'))
-    fig.add_trace(go.Scatter(x=valid_data.index, y=valid_data[regression_metric], text='validation'))
+    fig.add_trace(go.Scatter(x=test_data.index, y=test_data['prediction'], text='prediction'))
+    fig.add_trace(go.Scatter(x=test_data.index, y=test_data[regression_metric], text='response'))
 
     return fig
