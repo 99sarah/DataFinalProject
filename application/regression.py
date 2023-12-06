@@ -100,9 +100,9 @@ lasso_pie = dbc.Card(
 )
 
 regression_tab = dcc.Tab(
-    label='Regression',
+    label='Prediction',
     children=[
-        html.H1('Regression of new cases', style={'textAlign': 'center'}),
+        html.H1('Prediction of new deaths', style={'textAlign': 'center'}),
         dbc.Row(
             children=[
                 dbc.Col(
@@ -131,6 +131,7 @@ def rss(y, y_hat):
     pass
 
 def score(y_pred, y_true):
+    # source: https://medium.com/analytics-vidhya/root-mean-square-log-error-rmse-vs-rmlse-935c6cc1802a
     error = np.square(np.log10(y_pred + 1) - np.log10(y_true + 1)).mean() ** 0.5
     score = 1 - error
     return score
@@ -222,7 +223,7 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
 
     pie_fig = update_pie_chart(non_zero_df)
 
-    return [reg_fig, pie_fig, f'Accuracy calculated with RMLSE: {rmlse_score}%']
+    return [reg_fig, pie_fig, f'Prediction accuracy calculated with RMLSE: {rmlse_score}%']
 
 
 def update_pie_chart(non_zero_df):
