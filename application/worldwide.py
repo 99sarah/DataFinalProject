@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
-from data.covidData import kCovidDf, SIDEBAR_STYLE, STYLE
+from data.covidData import kCovidDf, SIDEBAR_STYLE, STYLE, label_map, get_label
 
 map_metrics = ['new_cases_smoothed_per_million',
                'new_deaths_smoothed_per_million',
@@ -25,10 +25,7 @@ map_sidebar = dbc.Card(html.Div(
         html.H6('Choose a daily metric'),
         dcc.Dropdown(
             id='map_metric_dropdown',
-            options=['new_cases_smoothed_per_million',
-                     'new_deaths_smoothed_per_million',
-                     'people_vaccinated_per_hundred',
-                     'total_cases_per_million'],
+            options=label_map(map_metrics),
             value='new_cases_smoothed_per_million',
             className='dbc',
             style=SIDEBAR_STYLE
@@ -53,8 +50,8 @@ worldwideTab = dcc.Tab(label='Covid-19 worldwide ',
                                            style={'textAlign': 'center'}),
                                    dbc.Row(
                                        [
-                                           dbc.Col(map_sidebar, width=2),
-                                           dbc.Col(map_content, width=10)
+                                           dbc.Col(map_sidebar, width=3),
+                                           dbc.Col(map_content, width=9)
                                        ],
                                        style=STYLE
                                    ),
@@ -85,6 +82,8 @@ def update_map(start, end, map_metric):
                         color=map_metric,
                         locationmode='ISO-3',
                         animation_frame=cov_df_grouped['date'].dt.date,
+                        animation_group='iso_code',
+                        hover_name='location',
                         range_color=(cov_df_grouped[metric].min(),
                                      quantile),
                         color_continuous_scale=px.colors.sequential.solar,
@@ -92,5 +91,6 @@ def update_map(start, end, map_metric):
                         #width=1500,
                         )
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
-
+    fig.update_layout(coloraxis_colorbar_title_text=get_label(metric))
+    fig.layout.sliders[0].currentvalue.prefix = 'Date='
     return fig
