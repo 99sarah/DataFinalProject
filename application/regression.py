@@ -110,17 +110,27 @@ regression_tab = dcc.Tab(
                     width=3
                 ),
                 dbc.Col(
-                    children=[regression_chart, html.H6(id='rmlse_score_display'), ],
+                    children=[
+                        regression_chart,
+                        dbc.Row(
+                            children=[
+                                dbc.Col(html.H6(id='rmlse_score_display'), width=4),
+                                dbc.Col(lasso_pie, width=8)
+                            ],
+                        )
+                    ],
                     width=9
-                )]
+                )
+            ]
         ),
         dbc.Row(
             children=[
+                dbc.Col(width=8),
                 dbc.Col(
                     children=[
-                        lasso_pie
+
                     ],
-                    # width=3
+                    width=4
                 ), ]
         ),
     ])
@@ -238,6 +248,7 @@ def update_pie_chart(non_zero_df):
     fig = px.pie(
         new_df,
         values='weight',
-        names='features'
+        names='features',
+        title='Influence of the metrics on the prediction'
     )
     return fig
