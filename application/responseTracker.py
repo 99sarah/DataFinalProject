@@ -6,7 +6,7 @@ from dash import Dash, html, dcc, callback, Output, Input, dash_table
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
-from data.covidData import kCovidDf
+from data.covidData import kCovidDf, get_label
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
 
@@ -56,7 +56,7 @@ def legend_ordinal_response(hover_data, response_metric):
 def update_graph(country_names, covid_trend_metric, response_metric_name, start_date, end_date):
     response_metric_description = kResponseOrdinalMeaning.query('Name == @response_metric_name')['Description'][0]
     nested_plot = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.9, 0.3], vertical_spacing=0.1,
-                                subplot_titles=(covid_trend_metric, response_metric_description))
+                                subplot_titles=(get_label(covid_trend_metric), response_metric_description))
 
     covid_pre_filter = kCovidDf.query("location in @country_names and @start_date < date < @end_date")
     response_pre_filter = kResponseTrackerDf.query("CountryName in @country_names and @start_date < Date < @end_date")

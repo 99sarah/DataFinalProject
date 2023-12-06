@@ -17,7 +17,7 @@ merge_1_df[['iso_code', 'location', 'date', 'stringency_index']] = (
     kResponseTrackerDf)[['CountryCode', 'CountryName', 'Date', 'StringencyIndex_Average']]
 merge_1_df.set_index(['iso_code', 'location', 'date'], inplace=True)
 merge_2_df = pd.DataFrame()
-merge_2_df[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']] =\
+merge_2_df[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']] = \
     kCovidDf[['iso_code', 'location', 'date', 'new_cases_smoothed', 'new_deaths_smoothed']]
 merge_2_df[['new_cases_smoothed_per_million', 'new_deaths_smoothed_per_million']] = (
     kCovidDf)[['new_cases_smoothed_per_million', 'new_deaths_smoothed_per_million']]
@@ -26,3 +26,18 @@ kCovid_Response = pd.concat([merge_1_df, merge_2_df], axis=1, join='inner')
 kCovid_Response.reset_index(inplace=True)
 
 date_format = '%m/%d/%Y'
+
+
+def get_label(column):
+    if column == 'location':
+        return 'Countries'
+    label = column.capitalize()
+    label = label.replace("_", " ")
+    return label
+
+
+def label_map(cols):
+    result = []
+    for col in cols:
+        result.append({'label': get_label(col), 'value': col})
+    return result

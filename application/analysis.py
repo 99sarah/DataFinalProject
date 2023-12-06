@@ -8,7 +8,7 @@ import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
 from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, kCovid_Response, date_format, \
-    kCovidDf_without_owid
+    kCovidDf_without_owid, get_label, label_map
 import application.responseTracker
 
 SIDEBAR_STYLE = {
@@ -52,7 +52,7 @@ left_filter = dbc.Card(html.Div(id='left_filter',
                                         )]),
                                     dbc.Col(
                                         children=[
-                                            html.H6('Pick countries:'),
+                                            html.H6('Select countries:'),
                                             dcc.Dropdown(
                                                 kResponseTrackerDf.CountryName.unique(),
                                                 id='location_selection',
@@ -68,13 +68,15 @@ corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
                       )
 
+
 response_legend = html.Div(id='response_legend', )
 response_dropdown = dbc.Row(
     children=[dbc.Col(
         children=[
             html.H6('Choose a covid metric:'),
             dcc.Dropdown(
-                kCovidDf.columns,
+                # kCovidDf.columns,
+                options=label_map(kCovidDf.columns),
                 id='covid-trend-selection',
                 value='new_cases_smoothed_per_million',
                 className='dbc',
@@ -246,9 +248,10 @@ def create_bubble_chart(dff, x_metric, y_metric, max_x, max_y, title):
         range_y=[0, max_y],
         title=title,
     )
-    fig.update_yaxes(rangemode="tozero")
-    fig.update_xaxes(rangemode="tozero")
+    fig.update_yaxes(rangemode="tozero", title=get_label(x_metric))
+    fig.update_xaxes(rangemode="tozero", title=get_label(y_metric))
     fig.update_traces(marker={'size': 20})
+    fig.update_legends(title=get_label('location'))
 
     return fig
 
@@ -259,12 +262,11 @@ def create_bubble_chart(dff, x_metric, y_metric, max_x, max_y, title):
     [Input('location_selection', 'value'),
      Input('date_range_picker', 'start_date'),
      Input('date_range_picker', 'end_date'),
-     Input('metric-selection', 'value'),
      Input('corona_trend_graph', 'hoverData'),
      Input('radio_item', 'value')
      ]
 )
-def update_bubble_bar_chart(countries, start_date, end_date, metric, date_hover, metric_type):
+def update_bubble_bar_chart(countries, start_date, end_date, date_hover, metric_type):
     if not countries:
         raise PreventUpdate
     if date_hover:
@@ -299,4 +301,7 @@ def create_bar_chart(dff, title):
         title=title,
         color='location'
     )
+    fig.update_yaxes(title=get_label('stringency_index'))
+    fig.update_xaxes(title=get_label('location'))
+    fig.update_legends(title=get_label('location'))
     return fig
