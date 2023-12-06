@@ -41,3 +41,15 @@ def label_map(cols):
     for col in cols:
         result.append({'label': get_label(col), 'value': col})
     return result
+
+
+SIDEBAR_STYLE = {
+    "margin-bottom": "2rem",
+}
+
+STYLE = {
+    "margin-top": "1rem",
+    "margin-left": "1rem",
+    "margin-right": "1rem",
+    "margin-bottom": "1rem",
+}

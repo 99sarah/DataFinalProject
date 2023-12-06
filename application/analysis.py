@@ -8,19 +8,8 @@ import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
 from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, kCovid_Response, date_format, \
-    kCovidDf_without_owid, get_label, label_map
+    kCovidDf_without_owid, get_label, label_map, STYLE, SIDEBAR_STYLE
 import application.responseTracker
-
-SIDEBAR_STYLE = {
-    "margin-bottom": "2rem",
-}
-
-STYLE = {
-    "margin-top": "1rem",
-    "margin-left": "1rem",
-    "margin-right": "1rem",
-    "margin-bottom": "1rem",
-}
 
 left_filter = dbc.Card(html.Div(id='left_filter',
                                 style=STYLE,
@@ -67,7 +56,6 @@ top_filter = dbc.Card(id='top_filter')
 corona_map = dbc.Card(id='corona_map',
                       children=[dcc.Loading(dcc.Graph(id='corona_map_graph'))]
                       )
-
 
 response_legend = html.Div(id='response_legend', )
 response_dropdown = dbc.Row(
@@ -117,8 +105,7 @@ radio_button = dbc.Row(children=[
 ])
 corona_bubble = dbc.Card(id='corona_bubble',
                          children=[dcc.Graph(id='corona_bubble_graph'),
-                                   radio_button
-                                   ]
+                                   radio_button]
                          )
 stringency_bar = dbc.Card(
     id='stringency_bar',
@@ -248,8 +235,8 @@ def create_bubble_chart(dff, x_metric, y_metric, max_x, max_y, title):
         range_y=[0, max_y],
         title=title,
     )
-    fig.update_yaxes(rangemode="tozero", title=get_label(x_metric))
-    fig.update_xaxes(rangemode="tozero", title=get_label(y_metric))
+    fig.update_xaxes(rangemode="tozero", title=get_label(x_metric))
+    fig.update_yaxes(rangemode="tozero", title=get_label(y_metric))
     fig.update_traces(marker={'size': 20})
     fig.update_legends(title=get_label('location'))
 
