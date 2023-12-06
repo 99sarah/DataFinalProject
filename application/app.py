@@ -4,7 +4,6 @@ import pandas as pd
 
 from worldwide import worldwideTab
 from regression import regression_tab
-from correlation import correlationTab
 from analysis import analysisTab
 
 import dash_bootstrap_components as dbc
@@ -22,7 +21,6 @@ app.layout = html.Div([
             worldwideTab,
             analysisTab,
             regression_tab,
-            correlationTab,
         ], className='dbc'),
 ])
 
