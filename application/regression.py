@@ -13,7 +13,7 @@ import application.responseTracker
 
 from sklearn import linear_model
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
 cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
@@ -177,10 +177,13 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
     all_features = covid_metrics
     all_features += response_metrics
 
-    train_data = all_regression_columns.sample(frac=0.6, random_state=12)
+    # rescales all feature columns
+    all_regression_columns[all_features] = StandardScaler().fit_transform(all_regression_columns[all_features])
+
+    train_data = all_regression_columns.sample(frac=0.6)
     valid_and_test = all_regression_columns.drop(train_data.index)
-    valid_data = valid_and_test.sample(frac=0.5, random_state=62)
-    test_data = all_regression_columns.drop(valid_data.index)
+    valid_data = valid_and_test.sample(frac=0.5)
+    test_data = valid_and_test.drop(valid_data.index)
 
     penalties = np.logspace(-4, 3, num=30)
     best_lambda = None
