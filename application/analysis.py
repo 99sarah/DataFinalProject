@@ -82,8 +82,8 @@ response_dropdown = dbc.Row(
                 className='dbc',
             ),
         ],
-        style=STYLE
-
+        style=STYLE,
+        width=5
     ),
 
         dbc.Col(
@@ -97,8 +97,8 @@ response_dropdown = dbc.Row(
                     className='dbc',
                 ),
             ],
-            style=STYLE
-
+            style=STYLE,
+            width=6
         ), ]
 )
 corona_trend = dbc.Card(id='corona_trend',
