@@ -31,19 +31,20 @@ date_format = '%m/%d/%Y'
 def get_label(column):
     if column == 'location':
         return 'Countries'
-    label = column.capitalize()
-    label = label.replace("_", " ")
+    response_desc = kResponseOrdinalMeaning[kResponseOrdinalMeaning['Name'] == column]
+    if response_desc.empty:
+        label = column.capitalize()
+        label = label.replace("_", " ")
+    else:
+        label = response_desc['Description'].iloc[0]
+
     return label
 
 
 def label_map(cols):
     result = []
     for col in cols:
-        response_desc = kResponseOrdinalMeaning[kResponseOrdinalMeaning['Name'] == col]
-        if response_desc.empty:
-            result.append({'label': get_label(col), 'value': col})
-        else:
-            result.append({'label': response_desc['Description'], 'value': col})
+        result.append({'label': get_label(col), 'value': col})
     return result
 
 

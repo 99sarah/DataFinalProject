@@ -202,6 +202,7 @@ def update_graphs(continent, start_date, end_date):
                         )
     fig.update_layout(margin=dict(t=45, r=2, l=5, b=20))
     fig.update_layout(coloraxis=dict(colorbar=dict(orientation='h', y=-0.15)))
+    fig.update_layout(coloraxis_colorbar_title_text=get_label(map_metric))
     return [fig]
 
 

@@ -8,7 +8,8 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
-from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, label_map, get_label
+from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, label_map, get_label, STYLE, \
+    SIDEBAR_STYLE
 import application.responseTracker
 
 from sklearn import linear_model
@@ -23,15 +24,6 @@ cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID',
 # date_converter['key'] = date_converter['value'].astype(np.int64)
 # date_converter.set_index('date_as_int')
 
-SIDEBAR_STYLE = {
-    "margin-bottom": "2rem",
-}
-
-STYLE = {
-    "margin-top": "2rem",
-    "margin-left": "1rem",
-    "margin-right": "1rem"
-}
 
 all_covid_metrics = ['new_cases_smoothed', 'icu_patients', 'reproduction_rate', 'hosp_patients', 'new_tests_smoothed',
                      'positive_rate', 'people_vaccinated']
@@ -43,7 +35,7 @@ all_response_metrics = ['StringencyIndex_Average', 'C1M_School closing', 'C2M_Wo
                         'H3_Contact tracing', 'H4_Emergency investment in healthcare', 'H7_Vaccination policy',
                         'H8M_Protection of elderly people']
 
-left_filter = html.Div(id='regression_left_filter',
+left_filter = dbc.Card(html.Div(id='regression_left_filter',
                        style=STYLE,
                        children=[
                            dbc.Col(
@@ -58,7 +50,7 @@ left_filter = html.Div(id='regression_left_filter',
                                    )]),
                            dbc.Col(
                                children=[
-                                   html.H5('Pick metrics you want to predict with', style={"margin-bottom": "1rem"}),
+                                   html.H5('Select metrics you want to predict with', style={"margin-bottom": "1rem"}),
                                    html.H6('Covid trend metrics:'),
                                    dcc.Dropdown(
                                        # all_covid_metrics,
@@ -80,7 +72,7 @@ left_filter = html.Div(id='regression_left_filter',
                                        multi=True
                                    ),
                                ]),
-                       ])
+                       ]))
 
 regression_chart = dbc.Card(
     id="lasso_regression",
@@ -114,7 +106,13 @@ regression_tab = dcc.Tab(
                         regression_chart,
                         dbc.Row(
                             children=[
-                                dbc.Col(html.H6(id='rmlse_score_display'), width=4),
+                                dbc.Col(html.Div(children=[
+                                    html.H6('Prediction accuracy calculated with RMLSE: '),
+                                    html.Br(),
+                                    html.Center(html.H5(id='rmlse_score_display')),
+                                ],
+                                    style=STYLE
+                                ), width=4),
                                 dbc.Col(lasso_pie, width=8)
                             ],
                         )
@@ -239,7 +237,7 @@ def perform_lasso_regression(country, covid_metrics, response_metrics):
 
     pie_fig = update_pie_chart(non_zero_df)
 
-    return [reg_fig, pie_fig, f'Prediction accuracy calculated with RMLSE: {rmlse_score}%']
+    return [reg_fig, pie_fig, f'{rmlse_score}%']
 
 
 def update_pie_chart(non_zero_df):
