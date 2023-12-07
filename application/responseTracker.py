@@ -21,8 +21,7 @@ def legend_ordinal_response(hover_data, response_metric):
         hover_data = dict({'points': []})
     response_metric_description = kResponseOrdinalMeaning.query('Name == @response_metric')['Description'].iloc[0]
     ordinal_values = list(map(lambda point: point['y'], hover_data['points']))
-    temp =kResponseOrdinalMeaning.query('Name == @response_metric')['Coding'].iloc[0].split('+')
-    ordinal_coding = temp
+    ordinal_coding = kResponseOrdinalMeaning.query('Name == @response_metric')['Coding'].iloc[0].split('+')
     ordered_list = []
     i = 0
     for ordinal_code in ordinal_coding:
