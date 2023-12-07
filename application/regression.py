@@ -19,12 +19,6 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 cov_df_grouped = kCovidDf.groupby(['iso_code', 'date']).sum().reset_index()
 cov_df_grouped = cov_df_grouped[~(cov_df_grouped.iso_code.str.startswith('OWID', na=False))]
 
-# date_converter = pd.DataFrame()
-# date_converter['value'] = kCovidDf['date']
-# date_converter['key'] = date_converter['value'].astype(np.int64)
-# date_converter.set_index('date_as_int')
-
-
 all_covid_metrics = ['new_cases_smoothed', 'icu_patients', 'reproduction_rate', 'hosp_patients', 'new_tests_smoothed',
                      'positive_rate', 'people_vaccinated']
 all_response_metrics = ['StringencyIndex_Average', 'C1M_School closing', 'C2M_Workplace closing',
@@ -36,43 +30,46 @@ all_response_metrics = ['StringencyIndex_Average', 'C1M_School closing', 'C2M_Wo
                         'H8M_Protection of elderly people']
 
 left_filter = dbc.Card(html.Div(id='regression_left_filter',
-                       style=STYLE,
-                       children=[
-                           dbc.Col(
-                               children=[
-                                   html.H6('Choose countries:'),
-                                   dcc.Dropdown(
-                                       kResponseTrackerDf.CountryName.unique(),
-                                       id='regression_location_selection',
-                                       value='Germany',
-                                       className='dbc',
-                                       style=SIDEBAR_STYLE
-                                   )]),
-                           dbc.Col(
-                               children=[
-                                   html.H5('Select metrics you want to predict with', style={"margin-bottom": "1rem"}),
-                                   html.H6('Covid trend metrics:'),
-                                   dcc.Dropdown(
-                                       # all_covid_metrics,
-                                       options=label_map(all_covid_metrics),
-                                       id='regression_covid_selection',
-                                       value=[all_covid_metrics[0]],
-                                       className='dbc',
-                                       style={"margin-bottom": "0.5rem", },
-                                       multi=True
-                                   ),
-                                   html.H6('policy response metrics:'),
-                                   dcc.Dropdown(
-                                       # all_response_metrics,
-                                       options=label_map(all_response_metrics),
-                                       id='regression_response_selection',
-                                       value=[all_response_metrics[0]],
-                                       className='dbc',
-                                       style=SIDEBAR_STYLE,
-                                       multi=True
-                                   ),
-                               ]),
-                       ]))
+                                style=STYLE,
+                                children=[
+                                    dbc.Col(
+                                        children=[
+                                            html.H6('Choose countries:'),
+                                            dcc.Dropdown(
+                                                kResponseTrackerDf.CountryName.unique(),
+                                                id='regression_location_selection',
+                                                value='Germany',
+                                                className='dbc',
+                                                style=SIDEBAR_STYLE
+                                            )]),
+                                    dbc.Col(
+                                        children=[
+                                            html.H5('Select metrics you want to predict with',
+                                                    style={"margin-bottom": "1rem"}),
+                                            html.H6('Covid trend metrics:'),
+                                            dcc.Dropdown(
+                                                # all_covid_metrics,
+                                                options=label_map(all_covid_metrics),
+                                                id='regression_covid_selection',
+                                                value=[all_covid_metrics[0]],
+                                                className='dbc',
+                                                style={"margin-bottom": "0.5rem", },
+                                                multi=True
+                                            ),
+                                            html.H6('policy response metrics:'),
+                                            dcc.Dropdown(
+                                                # all_response_metrics,
+                                                options=label_map(kResponseOrdinalMeaning['Name']) +
+                                                        [{'label': 'Stringency index',
+                                                          'value': 'StringencyIndex_Average'}],
+                                                id='regression_response_selection',
+                                                value=['C1M_School closing'],
+                                                className='dbc',
+                                                style=SIDEBAR_STYLE,
+                                                multi=True
+                                            ),
+                                        ]),
+                                ]))
 
 regression_chart = dbc.Card(
     id="lasso_regression",
