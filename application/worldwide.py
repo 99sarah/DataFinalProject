@@ -8,7 +8,6 @@ from data.covidData import kCovidDf, SIDEBAR_STYLE, STYLE, label_map, get_label
 
 map_metrics = ['new_cases_smoothed_per_million',
                'new_deaths_smoothed_per_million',
-               'people_vaccinated_per_hundred',
                'total_cases_per_million']
 
 map_sidebar = dbc.Card(html.Div(
