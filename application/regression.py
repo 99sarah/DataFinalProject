@@ -160,7 +160,7 @@ def print_nonzero_weights(model, feature_list):
      Input('regression_response_selection', 'value')]
 )
 def perform_lasso_regression(country, covid_metrics, response_metrics):
-    if not country:
+    if not country or (not covid_metrics and not response_metrics):
         raise PreventUpdate
     if not covid_metrics:
         covid_metrics = []
