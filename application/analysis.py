@@ -63,8 +63,7 @@ response_dropdown = dbc.Row(
         children=[
             html.H6('Choose a covid metric:'),
             dcc.Dropdown(
-                # kCovidDf.columns,
-                options=label_map(kCovidDf.columns),
+                options=label_map(kCovidDf.select_dtypes(include=np.number).columns),
                 id='covid-trend-selection',
                 value='new_cases_smoothed_per_million',
                 className='dbc',
@@ -118,10 +117,10 @@ analysisTab = dcc.Tab(
     label='Analysis',
     value='analysisTab',
     children=[
-        html.H1(
-            children='Analysis of covid-19',
-            style={'textAlign': 'center'}
-        ),
+        # html.H1(
+        #     children='Analysis of covid-19',
+        #     style={'textAlign': 'center'}
+        # ),
         dbc.Row(
             children=[
                 dbc.Col(
