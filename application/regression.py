@@ -9,7 +9,7 @@ import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 from matplotlib.dates import date2num, num2date
 from data.covidData import kCovidDf, kResponseTrackerDf, kResponseOrdinalMeaning, label_map, get_label, STYLE, \
-    SIDEBAR_STYLE
+    SIDEBAR_STYLE, new_legend
 import application.responseTracker
 
 from sklearn import linear_model
@@ -246,4 +246,5 @@ def update_pie_chart(non_zero_df):
         names='features',
         title='Influence of the metrics on the prediction'
     )
+    fig = new_legend(fig=fig, names=new_df['features'])
     return fig

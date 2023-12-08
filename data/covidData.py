@@ -48,6 +48,14 @@ def label_map(cols):
     return result
 
 
+def new_legend(fig, names):
+    for item in names:
+        for i, elem in enumerate(fig.data[0].labels):
+            if elem == item:
+                fig.data[0].labels[i] = get_label(item)
+    return fig
+
+
 SIDEBAR_STYLE = {
     "margin-bottom": "2rem",
 }
