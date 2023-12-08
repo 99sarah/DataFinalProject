@@ -34,7 +34,7 @@ left_filter = dbc.Card(html.Div(id='regression_left_filter',
                                 children=[
                                     dbc.Col(
                                         children=[
-                                            html.H6('Choose countries:'),
+                                            html.H6('Choose a country:'),
                                             dcc.Dropdown(
                                                 kResponseTrackerDf.CountryName.unique(),
                                                 id='regression_location_selection',
@@ -56,7 +56,7 @@ left_filter = dbc.Card(html.Div(id='regression_left_filter',
                                                 style={"margin-bottom": "0.5rem", },
                                                 multi=True
                                             ),
-                                            html.H6('policy response metrics:'),
+                                            html.H6('Policy response metrics:'),
                                             dcc.Dropdown(
                                                 # all_response_metrics,
                                                 options=label_map(kResponseOrdinalMeaning['Name']) +

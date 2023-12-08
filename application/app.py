@@ -11,8 +11,9 @@ from dash_bootstrap_templates import load_figure_template
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 external_stylesheets = [dbc.themes.DARKLY, dbc_css]
-app = Dash(__name__, external_stylesheets=external_stylesheets)
-load_figure_template("DARKLY")
+app: Dash = Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+load_figure_template("darkly")
 
 app.layout = html.Div([
     dcc.Tabs(
@@ -25,4 +26,5 @@ app.layout = html.Div([
 ])
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
+    app.run_server(port=80, debug=False, host='0.0.0.0')
